@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Stock{% endblock %}
+
+{% block content %}
+<style>
+.stock-qty {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+.stock-qty-zero {
+    color: #ff6b6b;
+}
+.stock-qty-low {
+    color: #ffb400;
+}
+.stock-qty-ok {
+    color: var(--emerald-light);
+}
+</style>
+
+<!-- Stats -->
+<section class="stats-grid">
+    <div class="glass-card glass-card-3d stat-card">
+        <div class="stat-card-inner">
+            <div class="stat-info">
+                <h3>{% trans "Produits en stock" %}</h3>
+                <div class="stat-value">{{ stock_data|length }}</div>
+                <span class="stat-change positive">{% trans "Produits actifs" %}</span>
+            </div>
+            <div class="stat-icon cyan">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--emerald-light)" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                    <line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stock List -->
+<section class="content-grid" style="grid-template-columns: 1fr;">
+    <div class="glass-card table-card">
+        <div class="card-header">
+            <div>
+                <h2 class="card-title">{% trans "État du Stock" %}</h2>
+                <p class="card-subtitle">{% trans "Quantité actuelle par produit" %}</p>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>{% trans "Produit" %}</th>
+                        <th>{% trans "Marque" %}</th>
+                        <th>{% trans "Catégorie" %}</th>
+                        <th>{% trans "Quantité" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in stock_data %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ row.product.name }}</td>
+                        <td>{{ row.product.brand.nom|default:"-" }}</td>
+                        <td>{{ row.product.category.nom|default:"-" }}</td>
+                        <td>
+                            <span class="stock-qty
+                                {% if row.quantity <= 0 %}stock-qty-zero
+                                {% elif row.quantity < 10 %}stock-qty-low
+                                {% else %}stock-qty-ok{% endif %}">
+                                {{ row.quantity }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; opacity: 0.6;">
+                            {% trans "Aucun produit en stock pour le moment." %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,820 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Achats{% endblock %}
+
+{% block content %}
+<style>
+.alert-msg {
+    padding: 10px 16px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+}
+.alert-error   { background: rgba(255, 80, 80, 0.15); color: #ff6b6b; border: 1px solid rgba(255, 80, 80, 0.3); }
+.alert-success { background: rgba(0, 200, 120, 0.15); color: var(--emerald-light); border: 1px solid rgba(0, 200, 120, 0.3); }
+.alert-warning { background: rgba(255, 180, 0, 0.15); color: #ffb400; border: 1px solid rgba(255, 180, 0, 0.3); }
+
+.search-results {
+    position: absolute;
+    z-index: 50;
+    width: 100%;
+    background: var(--card-bg, #1c1f26);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    margin-top: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+}
+.search-result-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #e8e8e8;
+}
+.search-result-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.total-box { font-size: 20px; font-weight: 600; color: var(--emerald-light); }
+
+.status-creation  { background: rgba(255, 180, 0, 0.15); color: #ffb400; border: 1px solid rgba(255,180,0,0.3); }
+.status-livraison { background: rgba(100, 180, 255, 0.15); color: #64b4ff; border: 1px solid rgba(100,180,255,0.3); }
+.status-reception  { background: rgba(0, 200, 120, 0.15); color: var(--emerald-light); border: 1px solid rgba(0,200,120,0.3); }
+
+/* Modal — bigger, roomier */
+.achat-modal-card {
+    max-width: 1180px !important;
+}
+
+/* Modal split layout: LEFT = fournisseur/product picker, RIGHT = cart */
+.achat-modal-body {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 24px;
+    align-items: start;
+}
+.achat-panel {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 20px;
+}
+.achat-panel h4 {
+    margin: 0 0 14px 0;
+    font-size: 13px;
+    font-weight: 700;
+    opacity: 0.75;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.achat-panel h4::before {
+    content: '';
+    width: 4px;
+    height: 14px;
+    border-radius: 2px;
+    background: var(--emerald-light, #00c878);
+    display: inline-block;
+}
+.achat-panel .form-input,
+.achat-panel select {
+    width: 100%;
+    box-sizing: border-box;
+    height: 44px;
+    font-size: 14px;
+}
+
+.achat-panel select {
+    padding: 0 40px 0 14px;
+    line-height: 44px;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.1);
+    background-color: #ffffff;
+    color: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+}
+.achat-panel .form-group {
+    position: relative;
+}
+
+.achat-panel .form-group::after {
+    content: '';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid rgba(255,255,255,0.5);
+    border-bottom: 2px solid rgba(255,255,255,0.5);
+    transform: translateY(-70%) rotate(45deg);
+    pointer-events: none;
+}
+
+.achat-panel select option {
+    background: var(--card-bg, #1c1f26);
+    color: #e8e8e8;
+}
+
+.product-search-hint {
+    font-size: 12px;
+    opacity: 0.55;
+    margin-top: 10px;
+    line-height: 1.5;
+}
+
+/* Product search results — clearer, roomier rows */
+.search-results {
+    max-height: 280px;
+}
+.search-result-item {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.search-result-item:last-child { border-bottom: none; }
+.search-result-item span:first-child { font-weight: 500; }
+.search-result-item span:last-child { opacity: 0.7; font-variant-numeric: tabular-nums; }
+
+/* Cart panel — this is where TempAchat lives, give it real room and its
+   own internal scroll so the table is never squeezed down to a sliver */
+.achat-panel-cart {
+    display: flex;
+    flex-direction: column;
+    min-height: 460px;
+}
+.achat-panel-cart .total-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    background: rgba(0,200,120,0.08);
+    border: 1px solid rgba(0,200,120,0.2);
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin: 0 0 14px 0;
+}
+.achat-panel-cart .total-box span:first-child {
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0.75;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.achat-panel-cart .table-wrapper {
+    max-height: 460px;
+    overflow-y: auto;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+.achat-panel-cart .data-table {
+    font-size: 13.5px;
+}
+.achat-panel-cart .data-table thead th {
+    position: sticky;
+    top: 0;
+    background: var(--card-bg, white);
+    z-index: 2;
+}
+
+.qte-pill {
+    border: none;
+    cursor: pointer;
+    padding: 4px 14px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.08);
+    color: inherit;
+    font-weight: 600;
+}
+.qte-pill:hover { background: rgba(255,255,255,0.16); }
+
+.optimistic-row { opacity: 0.55; }
+
+@media (max-width: 860px) {
+    .achat-modal-body { grid-template-columns: 1fr; }
+    .achat-panel-cart { min-height: 320px; }
+    .achat-panel-cart .table-wrapper { max-height: 320px; }
+}
+</style>
+
+<!-- Stats -->
+<section class="stats-grid">
+    <div class="glass-card glass-card-3d stat-card">
+        <div class="stat-card-inner">
+            <div class="stat-info">
+                <h3>{% trans "Total Achats" %}</h3>
+                <div class="stat-value">{{ achats|length }}</div>
+                <span class="stat-change positive">{% trans "All time" %}</span>
+            </div>
+            <div class="stat-icon cyan">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--emerald-light)" stroke-width="2">
+                    <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Messages -->
+{% if messages %}
+<div style="margin-bottom: 1rem;">
+    {% for message in messages %}
+    <div class="alert-msg
+        {% if message.tags == 'warning' %}alert-warning
+        {% elif message.tags == 'error' %}alert-error
+        {% else %}alert-success{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Achat List -->
+<section class="content-grid" style="grid-template-columns: 1fr;">
+    <div class="glass-card table-card">
+        <div class="card-header">
+            <div>
+                <h2 class="card-title">{% trans "Liste des Achats" %}</h2>
+                <p class="card-subtitle">{% trans "Historique des achats" %}</p>
+            </div>
+            <div class="card-actions">
+                <button class="card-btn" onclick="openAchatModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" style="margin-right: 6px;">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    {% trans "Ajouter un Achat" %}
+                </button>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>{% trans "Fournisseur" %}</th>
+                        <th>{% trans "Total" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Créé par" %}</th>
+                        <th>{% trans "Créé le" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for achat in achats %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ achat.fournisseur.name }}</td>
+                        <td>{{ achat.total }}</td>
+                        <td>
+                            <span class="status-badge
+                                {% if achat.status == 'creation' %}status-creation
+                                {% elif achat.status == 'livraison' %}status-livraison
+                                {% else %}status-reception{% endif %}">
+                                {{ achat.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ achat.user.shop_name|default:achat.user.username }}</td>
+                        <td>{{ achat.created_at|date:"d/m/Y H:i" }}</td>
+                                            <td>
+                            {% if achat.status != 'livraison' %}
+                                <!-- Per-line validate icon: advances this Achat's status. -->
+                                <button type="button" class="card-btn"
+                                    style="padding: 6px 12px; background: rgba(0,200,120,0.15); color: var(--emerald-light);"
+                                    data-advance-url="{% url 'achat_advance_status' achat.pk %}"
+                                    onclick="advanceAchatStatus(this)"
+                                    title="{% trans 'Valider / avancer le statut' %}">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                </button>
+
+                                <!-- Per-line delete icon -->
+                                <button class="card-btn"
+                                        style="padding: 6px 12px; background: rgba(255,80,80,0.15); color: #ff6b6b;"
+                                        data-id="{{ achat.pk }}"
+                                        data-delete-url="{% url 'achat_delete' achat.pk %}"
+                                        onclick="openDeleteAchatModal(this)"
+                                        title="{% trans 'Supprimer' %}">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"/>
+                                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                                        <path d="M10 11v6"/><path d="M14 11v6"/>
+                                    </svg>
+                                </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; opacity: 0.6;">
+                            {% trans "Aucun achat pour le moment." %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- ===================== ACHAT MODAL (create) ===================== -->
+<div id="achatModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+     z-index:1000; align-items:center; justify-content:center;">
+    <div style="position:absolute; top:0; left:0; width:100%; height:100%;
+                background:rgba(0,0,0,0.5);" onclick="closeAchatModal()"></div>
+
+    <div class="login-card achat-modal-card" style="position:relative; z-index:1001; width:100%;
+         margin:20px; max-height:92vh; overflow-y:auto;">
+
+        <!-- Header with Validate / Cancel at the top -->
+        <div class="login-header" style="display:flex; align-items:center; justify-content:space-between; text-align:left;">
+            <div>
+                <h1 class="login-title" style="margin:0;">{% trans "Nouvel Achat" %}</h1>
+                <p class="login-subtitle" style="margin:0;">{% trans "Ajoutez des produits puis validez" %}</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button type="button" class="btn" style="background: rgba(255,80,80,0.15); color:#ff6b6b;"
+                        id="btn_cancel_achat">
+                    {% trans "Annuler" %}
+                </button>
+               <button type="button" class="btn btn-primary" id="btn_validate_achat" disabled>
+                    {% trans "Enregistrer l'achat" %}
+                </button>
+            </div>
+        </div>
+
+        <div class="achat-modal-body" style="margin-top: 10px;">
+
+            <!-- LEFT: Fournisseur + Product picker -->
+            <div class="achat-panel">
+                <h4>{% trans "Fournisseur" %}</h4>
+                <div class="form-group">
+                    <select id="fournisseur_select" class="form-input">
+                        <option value="">{% trans "— Sélectionner un fournisseur —" %}</option>
+                        {% for f in fournisseurs %}
+                        <option value="{{ f.pk }}">{{ f.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <h4 style="margin-top: 18px;">{% trans "Produit" %}</h4>
+                <div class="form-group" style="position: relative; display:flex; gap:8px; align-items:flex-start;">
+                    <div style="flex:1; position:relative;">
+                        <input type="text" id="product_search" class="form-input"
+                               placeholder="{% trans 'Rechercher un produit...' %}" autocomplete="off">
+                        <div id="search_results" class="search-results"></div>
+                    </div>
+                    <!-- Reuses the existing "Add Product" modal from the product page — see partial include at
+                         the bottom of this file, no duplicate form is created here. -->
+                    <button type="button" class="card-btn" onclick="openProductAddModal()">
+                        {% trans "Nouveau" %}
+                    </button>
+                </div>
+
+                <p class="product-search-hint">
+                    {% trans "Sélectionnez un produit dans la liste pour saisir sa quantité." %}
+                </p>
+            </div>
+
+            <!-- RIGHT: TempAchat cart -->
+            <div class="achat-panel achat-panel-cart">
+                <h4>{% trans "Panier (TempAchat)" %}</h4>
+                <p class="total-box">
+                    <span>{% trans "Total" %}</span>
+                    <span id="cart_total">0.00</span>
+                </p>
+
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Produit" %}</th>
+                                <th>{% trans "Prix" %}</th>
+                                <th>{% trans "Qté" %}</th>
+                                <th>{% trans "Total" %}</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cart_body">
+                            <tr>
+                                <td colspan="5" style="text-align:center; opacity:0.6;">
+                                    {% trans "Sélectionnez un fournisseur" %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ===================== QUANTITY MODAL ===================== -->
+<!-- Used both when adding a new product to the cart and when editing an existing cart line's quantity. -->
+<div id="qteModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+     z-index:1100; align-items:center; justify-content:center;">
+    <div style="position:absolute; top:0; left:0; width:100%; height:100%;
+                background:rgba(0,0,0,0.5);" onclick="closeQteModal()"></div>
+
+    <div class="login-card" style="position:relative; z-index:1101; width:100%; max-width:340px; margin:20px;">
+        <div class="login-header">
+            <h1 class="login-title" style="font-size:18px;">{% trans "Quantité" %}</h1>
+            <p class="login-subtitle" id="qte_modal_product_name"></p>
+        </div>
+
+        <div class="form-group">
+            <input type="number" id="qte_modal_input" class="form-input" min="1" step="1" value="1"
+                   style="text-align:center; font-size:20px;">
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 10px;">
+            <button type="button" id="qte_modal_cancel" class="btn" style="flex:1; background: rgba(255,255,255,0.1);">
+                {% trans "Annuler" %}
+            </button>
+            <button type="button" id="qte_modal_confirm" class="btn btn-primary" style="flex:1;">
+                {% trans "Confirmer" %}
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== DELETE ACHAT MODAL ===================== -->
+<div id="deleteAchatModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+     z-index:1000; align-items:center; justify-content:center;">
+    <div style="position:absolute; top:0; left:0; width:100%; height:100%;
+                background:rgba(0,0,0,0.5);" onclick="closeDeleteAchatModal()"></div>
+
+    <div class="login-card" style="position:relative; z-index:1001; width:100%; max-width:400px; margin:20px;">
+        <div class="login-header">
+            <div class="login-logo" style="background: rgba(255,80,80,0.2); color: #ff6b6b;">!</div>
+            <h1 class="login-title">{% trans "Supprimer l'achat" %}</h1>
+            <p class="login-subtitle">{% trans "Cette action est irréversible." %}</p>
+        </div>
+        <form method="POST" id="deleteAchatForm" action="">
+            {% csrf_token %}
+            <div style="display: flex; gap: 12px;">
+                <button type="button" onclick="closeDeleteAchatModal()" class="btn"
+                        style="flex:1; background: rgba(255,255,255,0.1);">
+                    {% trans "Annuler" %}
+                </button>
+                <button type="submit" class="btn"
+                        style="flex:1; background: rgba(255,80,80,0.2); color: #ff6b6b;
+                               border: 1px solid rgba(255,80,80,0.3);">
+                    {% trans "Oui, supprimer" %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===================== SHARED "ADD PRODUCT" MODAL =====================
+     This is NOT redefined here. It's the same partial included on the product page,
+     so there is only one implementation of the Add Product form/JS in the whole app.
+     See partials/_product_add_modal.html for the one-time setup needed. -->
+
+
+<script>
+const urls = {
+    search:    "{% url 'achat_product_search' %}",
+    tempAdd:   "{% url 'achat_temp_add' %}",
+    tempList:  "{% url 'achat_temp_list' %}",
+    tempQte:   "{% url 'achat_temp_update_qte' %}",
+    tempDel:   "{% url 'achat_temp_delete' %}",
+      save:     "{% url 'achat_save_cart' %}",
+};
+const csrfToken = '{{ csrf_token }}';
+
+let selectedProduct = null;   // product picked from search, pending qty confirmation (new cart line)
+let editingTempId   = null;   // TempAchat id being edited (existing cart line), null when adding new
+
+/* ── Achat modal open/close ─────────────────────────────── */
+function openAchatModal() {
+    document.getElementById('achatModal').style.display = 'flex';
+}
+function closeAchatModal() {
+    document.getElementById('achatModal').style.display = 'none';
+    closeQteModal();
+    resetPicker();
+}
+document.getElementById('btn_cancel_achat').addEventListener('click', async function () {
+    const fournisseurId = document.getElementById('fournisseur_select').value;
+    if (fournisseurId) {
+        // Clear any items left in the cart for this fournisseur
+        const res = await fetch(`${urls.tempList}?fournisseur_id=${fournisseurId}`);
+        const data = await res.json();
+        for (const item of data.items) {
+            await fetch(urls.tempDel, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ id: item.id }),
+            });
+        }
+    }
+    closeAchatModal();
+    location.reload();
+});
+
+function resetPicker() {
+    selectedProduct = null;
+    editingTempId = null;
+    document.getElementById('product_search').value = '';
+}
+
+/* ── Quantity modal ──────────────────────────────────────── */
+function openQteModal(productLabel, currentQte) {
+    document.getElementById('qte_modal_product_name').textContent = productLabel || '';
+    const input = document.getElementById('qte_modal_input');
+    input.value = currentQte && currentQte >= 1 ? currentQte : 1;
+    document.getElementById('qteModal').style.display = 'flex';
+    input.focus();
+    input.select();
+}
+function closeQteModal() {
+    document.getElementById('qteModal').style.display = 'none';
+}
+
+document.getElementById('qte_modal_input').addEventListener('input', function () {
+    // Never allow 0 or negative values.
+    if (this.value !== '' && parseInt(this.value, 10) < 1) {
+        this.value = 1;
+    }
+});
+
+document.getElementById('qte_modal_cancel').addEventListener('click', function () {
+    closeQteModal();
+    resetPicker();
+});
+
+document.getElementById('qte_modal_confirm').addEventListener('click', async function () {
+    let qte = parseInt(document.getElementById('qte_modal_input').value, 10);
+    if (isNaN(qte) || qte < 1) qte = 1;
+    closeQteModal();
+
+    if (editingTempId) {
+        const idToUpdate = editingTempId;
+        editingTempId = null;
+        await updateQte(idToUpdate, qte);
+        return;
+    }
+    await confirmAddToCart(qte);
+});
+
+/* ── Product search (debounced) ─────────────────────────── */
+let searchTimeout;
+document.getElementById('product_search').addEventListener('input', function () {
+    clearTimeout(searchTimeout);
+    const q = this.value.trim();
+    const box = document.getElementById('search_results');
+
+    if (q.length < 2) { box.style.display = 'none'; return; }
+
+    searchTimeout = setTimeout(async () => {
+        const res = await fetch(`${urls.search}?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+
+        box.innerHTML = '';
+        if (data.products.length === 0) {
+            box.innerHTML = `<div class="search-result-item">{% trans "Aucun produit trouvé" %}</div>`;
+        } else {
+            data.products.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'search-result-item';
+                div.innerHTML = `<span>${p.name}</span><span>${p.price_achat}</span>`;
+                div.onclick = () => pickProduct(p);
+                box.appendChild(div);
+            });
+        }
+        box.style.display = 'block';
+    }, 300);
+});
+
+document.addEventListener('click', function (e) {
+    if (!e.target.closest('#product_search') && !e.target.closest('#search_results')) {
+        document.getElementById('search_results').style.display = 'none';
+    }
+});
+
+/* Selecting a product forces the quantity modal open (starts at 1). */
+function pickProduct(product) {
+    selectedProduct = product;
+    editingTempId = null;
+    document.getElementById('search_results').style.display = 'none';
+    document.getElementById('product_search').value = product.name;
+    openQteModal(`${product.name} (${product.price_achat})`, 1);
+}
+
+/* If the shared Add-Product modal notifies us of a newly created product,
+   select it immediately and prompt for a quantity. */
+document.addEventListener('product:created', function (e) {
+    if (e.detail) pickProduct(e.detail);
+});
+
+/* ── Add to cart (TempAchat) — shown in the table immediately, then persisted ── */
+async function confirmAddToCart(qte) {
+    const fournisseurId = document.getElementById('fournisseur_select').value;
+    if (!fournisseurId) {
+        alert("{% trans 'Veuillez sélectionner un fournisseur' %}");
+        selectedProduct = null;
+        document.getElementById('product_search').value = '';
+        return;
+    }
+    if (!selectedProduct) return;
+
+    const product = selectedProduct;
+    selectedProduct = null;
+    document.getElementById('product_search').value = '';
+
+    const rowId = addOptimisticRow(product, qte);
+
+    const body = new URLSearchParams({
+        produit_id: product.id,
+        fournisseur_id: fournisseurId,
+        qte: qte,
+    });
+
+    try {
+        const res = await fetch(urls.tempAdd, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body,
+        });
+        const data = await res.json();
+        if (data.status !== 200) {
+            alert(data.message || 'Erreur');
+        }
+    } catch (e) {
+        alert("{% trans 'Erreur réseau' %}");
+    } finally {
+        document.getElementById(rowId)?.remove();
+        loadCart();
+    }
+}
+
+function addOptimisticRow(product, qte) {
+    const tbody = document.getElementById('cart_body');
+    // Clear any "empty" placeholder row before inserting.
+    if (tbody.children.length === 1 && tbody.children[0].children.length === 1) {
+        tbody.innerHTML = '';
+    }
+    const rowId = `optimistic-${Date.now()}`;
+    const tr = document.createElement('tr');
+    tr.id = rowId;
+    tr.className = 'optimistic-row';
+    tr.innerHTML = `
+        <td>${product.name}</td>
+        <td>${product.price_achat}</td>
+        <td>${qte}</td>
+        <td>…</td>
+        <td>{% trans "Ajout…" %}</td>
+    `;
+    tbody.appendChild(tr);
+    return rowId;
+}
+
+/* ── Load cart ───────────────────────────────────────────── */
+async function loadCart() {
+    const fournisseurId = document.getElementById('fournisseur_select').value;
+    const tbody = document.getElementById('cart_body');
+    const btnValidate = document.getElementById('btn_validate_achat');
+
+    if (!fournisseurId) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; opacity:0.6;">
+            {% trans "Sélectionnez un fournisseur" %}</td></tr>`;
+        document.getElementById('cart_total').textContent = '0.00';
+        btnValidate.disabled = true;
+        return;
+    }
+
+    const res = await fetch(`${urls.tempList}?fournisseur_id=${fournisseurId}`);
+    const data = await res.json();
+
+    if (data.items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; opacity:0.6;">
+            {% trans "Panier vide" %}</td></tr>`;
+        btnValidate.disabled = true;
+    } else {
+        tbody.innerHTML = data.items.map(item => `
+            <tr>
+                <td>${item.produit}</td>
+                <td>${item.price_achat}</td>
+                <td>
+                    <button type="button" class="qte-pill"
+                        onclick="openEditQteModal(${item.id}, ${item.qte}, ${JSON.stringify(item.produit)})">
+                        ${item.qte}
+                    </button>
+                </td>
+                <td>${item.total}</td>
+                <td>
+                    <button class="card-btn" style="padding:6px 10px; background: rgba(255,80,80,0.15); color:#ff6b6b;"
+                        onclick="removeFromCart(${item.id})">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                        </svg>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+        btnValidate.disabled = false;
+    }
+
+    document.getElementById('cart_total').textContent = data.total;
+}
+
+/* Editing the quantity of an existing cart line opens the same modal. */
+function openEditQteModal(tempId, currentQte, produitName) {
+    editingTempId = tempId;
+    openQteModal(produitName, currentQte);
+}
+
+async function updateQte(id, qte) {
+    await fetch(urls.tempQte, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ id: id, qte: qte }),
+    });
+    loadCart();
+}
+
+async function removeFromCart(id) {
+    await fetch(urls.tempDel, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ id: id }),
+    });
+    loadCart();
+}
+
+document.getElementById('fournisseur_select').addEventListener('change', loadCart);
+
+
+/* ── Per-line status advance (Achat list) ────────────────── */
+async function advanceAchatStatus(button) {
+    const url = button.dataset.advanceUrl;
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+        });
+        const data = await res.json();
+        if (data.status === 200) {
+            location.reload();
+        } else {
+            alert(data.message || 'Erreur');
+        }
+    } catch (e) {
+        alert("{% trans 'Erreur réseau' %}");
+    }
+}
+
+/* ── Delete achat modal ──────────────────────────────────── */
+function openDeleteAchatModal(button) {
+    document.getElementById('deleteAchatForm').action = button.dataset.deleteUrl;
+    document.getElementById('deleteAchatModal').style.display = 'flex';
+}
+function closeDeleteAchatModal() {
+    document.getElementById('deleteAchatModal').style.display = 'none';
+}
+let isSavingAchat = false;
+document.getElementById('btn_validate_achat').addEventListener('click', async function () {
+    if (isSavingAchat) return;
+    const fournisseurId = document.getElementById('fournisseur_select').value;
+    if (!fournisseurId) return;
+
+    isSavingAchat = true;
+    this.disabled = true;
+
+    try {
+        const res = await fetch(urls.save, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ fournisseur_id: fournisseurId }),
+        });
+        const data = await res.json();
+        if (data.status === 200) {
+            location.reload();
+        } else {
+            alert(data.message || 'Erreur');
+            isSavingAchat = false;
+            this.disabled = false;
+        }
+    } catch (e) {
+        alert("{% trans 'Erreur réseau' %}");
+        isSavingAchat = false;
+        this.disabled = false;
+    }
+});
+</script>
+
+
+{% endblock %}

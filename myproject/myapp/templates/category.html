@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Categories{% endblock %}
+
+{% block content %}
+
+<style>
+.alert-msg {
+    padding: 10px 16px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+.alert-error {
+    background: rgba(255, 80, 80, 0.15);
+    color: #ff6b6b;
+    border: 1px solid rgba(255, 80, 80, 0.3);
+}
+.alert-success {
+    background: rgba(0, 200, 120, 0.15);
+    color: var(--emerald-light);
+    border: 1px solid rgba(0, 200, 120, 0.3);
+}
+</style>
+
+    <!-- Stats Cards -->
+    <section class="stats-grid">
+        <div class="glass-card glass-card-3d stat-card">
+            <div class="stat-card-inner">
+                <div class="stat-info">
+                    <h3>{% trans "Total Categories" %}</h3>
+                    <div class="stat-value">{{ categories|length }}</div>
+                    <span class="stat-change positive">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                        </svg>
+                        {% trans "All time" %}
+                    </span>
+                </div>
+                <div class="stat-icon cyan">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--emerald-light)" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div style="margin-bottom: 1rem;">
+        {% for message in messages %}
+        <div class="alert-msg {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Categories Table -->
+    <section class="content-grid" style="grid-template-columns: 1fr;">
+        <div class="glass-card table-card" style="grid-column: span 1;">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">{% trans "All Categories" %}</h2>
+                    <p class="card-subtitle">{% trans "Manage your product categories" %}</p>
+                </div>
+                <div class="card-actions">
+                    <button class="card-btn" onclick="openAddCategoryModal()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" style="margin-right: 6px;">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        {% trans "Add Category" %}
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>{% trans "Name" %}</th>
+                            <th>{% trans "Slug" %}</th>
+                            <th>{% trans "Brand" %}</th>
+                            <th>{% trans "Description" %}</th>
+                            <th>{% trans "Actions" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in categories %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <div class="table-user">
+                                    <div class="table-avatar"
+                                         style="background: linear-gradient(135deg, var(--emerald-light), var(--emerald));">
+                                        {{ category.nom|slice:":2"|upper }}
+                                    </div>
+                                    <div class="table-user-info">
+                                        <span class="table-user-name">{{ category.nom }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="status-badge completed">{{ category.slug }}</span>
+                            </td>
+                            <td>
+                                {% if category.brand %}
+                                    <span class="status-badge">{{ category.brand.nom }}</span>
+                                {% else %}
+                                    <span style="opacity:0.4;">—</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ category.description|default:"—"|truncatechars:50 }}</td>
+                            <td>
+                                <div style="display:flex; gap:8px;">
+                                    <button class="card-btn" style="padding: 6px 12px;"
+                                        data-id="{{ category.pk }}"
+                                        data-nom="{{ category.nom }}"
+                                        data-slug="{{ category.slug }}"
+                                        data-description="{{ category.description }}"
+                                        data-brand-id="{{ category.brand.pk|default:'' }}"
+                                        onclick="openCategoryEditModal(this)">
+                                        {% trans "Edit" %}
+                                    </button>
+                                    <button class="card-btn" style="padding: 6px 12px; background:rgba(255,80,80,0.15); color:#ff6b6b;"
+                                        data-id="{{ category.pk }}"
+                                        data-nom="{{ category.nom }}"
+                                        onclick="openCategoryDeleteModal(this)">
+                                        {% trans "Delete" %}
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align:center; opacity:0.6;">
+                                {% trans "No categories found." %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </section>
+
+</main>
+</div>
+
+<!-- ===================== ADD MODAL ===================== -->
+<div id="addCategoryModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+     z-index:1000; align-items:center; justify-content:center;">
+    <div style="position:absolute; top:0; left:0; width:100%; height:100%;
+                background:rgba(0,0,0,0.5);" onclick="closeAddCategoryModal()"></div>
+
+    <div class="login-card" style="position:relative; z-index:1001; width:100%; max-width:450px; margin:20px;">
+        <div class="login-header">
+            <div class="login-logo">C</div>
+            <h1 class="login-title">{% trans "Add Category" %}</h1>
+            <p class="login-subtitle">{% trans "Create a new product category" %}</p>
+        </div>
+
+        <form method="POST" action="{% url 'category_add' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">{% trans "Name" %}</label>
+                <input type="text" name="nom" id="add_nom" class="form-input"
+                       placeholder="{% trans 'e.g. Electronics' %}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">{% trans "Slug" %}</label>
+                <input type="text" name="slug" id="add_slug" class="form-input"
+                       placeholder="{% trans 'e.g. electronics' %}" required>
+                <small style="color:var(--text-muted); font-size:11px; margin-top:4px; display:block;">
+                    {% trans "Auto-generated from name. Lowercase, no spaces." %}
+                </small>
+            </div>
+            <div class="form-group">
+                <label class="form-label">{% trans "Brand" %}</label>
+                <select name="brand" class="form-input">
+                    <option value="">— {% trans "No Brand" %} —</option>
+                    {% for brand in brands %}
+                        <option value="{{ brand.pk }}">{{ brand.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">{% trans "Description" %}</label>
+                <textarea name="description" class="form-input" rows="3"
+                          placeholder="{% trans 'Optional description...' %}"
+                          style="resize:vertical;"></textarea>
+            </div>
+
+            <div style="display:flex; gap:12px;">
+                <button type="button" onclick="closeAddCategoryModal()" class="btn"
+                        style="flex:1; background:rgba(255,255,255,0.1);">
+                    {% trans "Cancel" %}
+                </button>
+                <button type="submit" class="btn btn-primary" style="flex:1;">
+                    {% trans "Add Category" %}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                        <polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===================== EDIT MODAL ===================== -->
+<div id="editCategoryModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+     z-index:1000; align-items:center; justify-content:center;">
+    <div style="position:absolute; top:0; left:0; width:100%; height:100%;
+                background:rgba(0,0,0,0.5);" onclick="closeCategoryEditModal()"></div>
+
+    <div class="login-card" style="position:relative; z-index:1001; width:100%; max-width:450px; margin:20px;">
+        <div class="login-header">
+            <div class="login-logo">C</div>
+            <h1 class="login-title">{% trans "Edit Category" %}</h1>
+            <p class="login-subtitle">{% trans "Update category details" %}</p>
+        </div>
+
+        <form method="POST" id="editCategoryForm" action="">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">{% trans "Name" %}</label>
+                <input type="text" id="edit_nom" name="nom" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">{% trans "Slug" %}</label>
+                <input type="text" id="edit_slug" name="slug" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">{% trans "Brand" %}</label>
+                <select name="brand" id="edit_brand" class="form-input">
+                    <option value="">— {% trans "No Brand" %} —</option>
+                    {% for brand in brands %}
+                        <option value="{{ brand.pk }}">{{ brand.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">{% trans "Description" %}</label>
+                <textarea id="edit_description" name="description" class="form-input"
+                          rows="3" style="resize:vertical;"></textarea>
+            </div>
+
+            <div style="display:flex; gap:12px;">
+                <button type="button" onclick="closeCategoryEditModal()" class="btn"
+                        style="flex:1; background:rgba(255,255,255,0.1);">
+                    {% trans "Cancel" %}
+                </button>
+                <button type="submit" class="btn btn-primary" style="flex:1;">
+                    {% trans "Save Changes" %}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===================== DELETE MODAL ===================== -->
+<div id="deleteCategoryModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+     z-index:1000; align-items:center; justify-content:center;">
+    <div style="position:absolute; top:0; left:0; width:100%; height:100%;
+                background:rgba(0,0,0,0.5);" onclick="closeCategoryDeleteModal()"></div>
+
+    <div class="login-card" style="position:relative; z-index:1001; width:100%; max-width:400px; margin:20px;">
+        <div class="login-header">
+            <div class="login-logo" style="background:rgba(255,80,80,0.2); color:#ff6b6b;">!</div>
+            <h1 class="login-title">{% trans "Delete Category" %}</h1>
+            <p class="login-subtitle" id="deleteConfirmText">
+                {% trans "Are you sure you want to delete this category?" %}
+            </p>
+        </div>
+
+        <form method="POST" id="deleteCategoryForm" action="">
+            {% csrf_token %}
+            <div style="display:flex; gap:12px;">
+                <button type="button" onclick="closeCategoryDeleteModal()" class="btn"
+                        style="flex:1; background:rgba(255,255,255,0.1);">
+                    {% trans "Cancel" %}
+                </button>
+                <button type="submit" class="btn"
+                        style="flex:1; background:rgba(255,80,80,0.2); color:#ff6b6b;
+                               border:1px solid rgba(255,80,80,0.3);">
+                    {% trans "Yes, Delete" %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+
+<script>
+    /* ---------- Add ---------- */
+    function openAddCategoryModal() {
+        document.getElementById('addCategoryModal').style.display = 'flex';
+    }
+    function closeAddCategoryModal() {
+        document.getElementById('addCategoryModal').style.display = 'none';
+    }
+
+    /* ---------- Edit ---------- */
+    function openCategoryEditModal(button) {
+        document.getElementById('editCategoryForm').action =
+            `/category/edit/${button.dataset.id}/`;
+        document.getElementById('edit_nom').value         = button.dataset.nom;
+        document.getElementById('edit_slug').value        = button.dataset.slug;
+        document.getElementById('edit_description').value = button.dataset.description;
+        document.getElementById('edit_brand').value       = button.dataset.brandId || '';
+        document.getElementById('editCategoryModal').style.display = 'flex';
+    }
+    function closeCategoryEditModal() {
+        document.getElementById('editCategoryModal').style.display = 'none';
+    }
+
+    /* ---------- Delete ---------- */
+    function openCategoryDeleteModal(button) {
+        document.getElementById('deleteCategoryForm').action =
+            `/category/delete/${button.dataset.id}/`;
+        document.getElementById('deleteConfirmText').textContent =
+            `Are you sure you want to delete "${button.dataset.nom}"? This cannot be undone.`;
+        document.getElementById('deleteCategoryModal').style.display = 'flex';
+    }
+    function closeCategoryDeleteModal() {
+        document.getElementById('deleteCategoryModal').style.display = 'none';
+    }
+
+    /* ---------- Auto-generate slug from name (Add modal only) ---------- */
+    document.getElementById('add_nom')?.addEventListener('input', function () {
+        const slug = this.value
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-');
+        document.getElementById('add_slug').value = slug;
+    });
+</script>
+
+{% endblock %}

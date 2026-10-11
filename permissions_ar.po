@@ -1,0 +1,170 @@
+# Arabic translations for permissions page
+# Following the same structure as users.html translations
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2026-03-30 00:00+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Arabic <ar@li.org>\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+# ── PAGE TITLE ──────────────────────────────────────────
+#: .\myapp\templates\permissions.html:8
+msgid "Dashboard Overview"
+msgstr "نظرة عامة على لوحة التحكم"
+
+# ── STATS CARDS ─────────────────────────────────────────
+#: .\myapp\templates\permissions.html
+msgid "Total Roles"
+msgstr "إجمالي الأدوار"
+
+#: .\myapp\templates\permissions.html
+msgid "Active"
+msgstr "نشط"
+
+#: .\myapp\templates\permissions.html
+msgid "Total Permissions"
+msgstr "إجمالي الصلاحيات"
+
+#: .\myapp\templates\permissions.html
+msgid "Available"
+msgstr "متاح"
+
+#: .\myapp\templates\permissions.html
+msgid "Total Assigned"
+msgstr "إجمالي المُعيَّن"
+
+#: .\myapp\templates\permissions.html
+msgid "Across all roles"
+msgstr "عبر جميع الأدوار"
+
+# ── ROLES TABLE ──────────────────────────────────────────
+#: .\myapp\templates\permissions.html
+msgid "All Roles"
+msgstr "جميع الأدوار"
+
+#: .\myapp\templates\permissions.html
+msgid "Manage roles and their assigned permissions"
+msgstr "إدارة الأدوار والصلاحيات المعيَّنة لها"
+
+#: .\myapp\templates\permissions.html
+msgid "Add Role"
+msgstr "إضافة دور"
+
+#: .\myapp\templates\permissions.html
+msgid "Role"
+msgstr "الدور"
+
+#: .\myapp\templates\permissions.html
+msgid "Assigned Permissions"
+msgstr "الصلاحيات المُعيَّنة"
+
+#: .\myapp\templates\permissions.html
+msgid "Count"
+msgstr "العدد"
+
+#: .\myapp\templates\permissions.html
+msgid "Actions"
+msgstr "الإجراءات"
+
+#: .\myapp\templates\permissions.html
+msgid "Django Group"
+msgstr "مجموعة Django"
+
+#: .\myapp\templates\permissions.html
+msgid "No permissions assigned"
+msgstr "لا توجد صلاحيات مُعيَّنة"
+
+#: .\myapp\templates\permissions.html
+msgid "Edit"
+msgstr "تعديل"
+
+#: .\myapp\templates\permissions.html
+msgid "Delete"
+msgstr "حذف"
+
+#: .\myapp\templates\permissions.html
+msgid "No roles yet. Click"
+msgstr "لا توجد أدوار بعد. انقر على"
+
+#: .\myapp\templates\permissions.html
+msgid "Add Role to get started."
+msgstr "إضافة دور للبدء."
+
+# ── ADD ROLE MODAL ───────────────────────────────────────
+#: .\myapp\templates\permissions.html
+msgid "Create New Role"
+msgstr "إنشاء دور جديد"
+
+#: .\myapp\templates\permissions.html
+msgid "Enter a name for the new role. You can assign permissions after creating it."
+msgstr "أدخل اسمًا للدور الجديد. يمكنك تعيين الصلاحيات بعد إنشائه."
+
+#: .\myapp\templates\permissions.html
+msgid "e.g. Directeur, Formateur, Comptable…"
+msgstr "مثال: مدير، مدرّب، محاسب..."
+
+#: .\myapp\templates\permissions.html
+msgid "Cancel"
+msgstr "إلغاء"
+
+#: .\myapp\templates\permissions.html
+msgid "Create Role"
+msgstr "إنشاء دور"
+
+# ── DELETE MODAL ─────────────────────────────────────────
+#: .\myapp\templates\permissions.html
+msgid "Delete Role"
+msgstr "حذف الدور"
+
+#: .\myapp\templates\permissions.html
+msgid "Are you sure? This cannot be undone."
+msgstr "هل أنت متأكد؟ لا يمكن التراجع عن هذا الإجراء."
+
+#: .\myapp\templates\permissions.html
+msgid "Yes, Delete"
+msgstr "نعم، احذف"
+
+# ── EDIT PERMISSIONS VIEW ────────────────────────────────
+#: .\myapp\templates\permissions.html
+msgid "Back to all roles"
+msgstr "العودة إلى جميع الأدوار"
+
+#: .\myapp\templates\permissions.html
+msgid "Permissions"
+msgstr "الصلاحيات"
+
+#: .\myapp\templates\permissions.html
+msgid "Check the permissions this role should have access to."
+msgstr "حدد الصلاحيات التي يجب أن يتمتع بها هذا الدور."
+
+#: .\myapp\templates\permissions.html
+msgid "Select All"
+msgstr "تحديد الكل"
+
+#: .\myapp\templates\permissions.html
+msgid "Clear All"
+msgstr "إلغاء تحديد الكل"
+
+#: .\myapp\templates\permissions.html
+msgid "Save Permissions"
+msgstr "حفظ الصلاحيات"
+
+# ── FOOTER ───────────────────────────────────────────────
+#: .\myapp\templates\permissions.html
+msgid "Copyright"
+msgstr "حقوق النشر"
+
+#: .\myapp\templates\permissions.html
+msgid "Your Company"
+msgstr "شركتك"
+
+#: .\myapp\templates\permissions.html
+msgid "Designed by"
+msgstr "تصميم"

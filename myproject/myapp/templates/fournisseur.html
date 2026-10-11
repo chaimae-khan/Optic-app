@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Fournisseurs{% endblock %}
+
+{% block content %}
+<style>
+    .alert-msg     { padding:10px 16px; border-radius:8px; margin-bottom:8px; }
+    .alert-error   { background:rgba(255,80,80,0.15); color:#ff6b6b; border:1px solid rgba(255,80,80,0.3); }
+    .alert-success { background:rgba(0,200,120,0.15); color:var(--emerald-light); border:1px solid rgba(0,200,120,0.3); }
+</style>
+
+<!-- Stats -->
+<section class="stats-grid">
+    <div class="glass-card glass-card-3d stat-card">
+        <div class="stat-card-inner">
+            <div class="stat-info">
+                <h3>{% trans "Total Fournisseurs" %}</h3>
+                <div class="stat-value">{{ fournisseurs|length }}</div>
+                <span class="stat-change positive">{% trans "All time" %}</span>
+            </div>
+            <div class="stat-icon cyan">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--emerald-light)" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Messages -->
+{% if messages %}
+<div style="margin-bottom:1rem;">
+    {% for message in messages %}
+    <div class="alert-msg {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Table -->
+<section class="content-grid" style="grid-template-columns:1fr;">
+    <div class="glass-card table-card" style="grid-column:span 1;">
+        <div class="card-header">
+            <div>
+                <h2 class="card-title">{% trans "All Fournisseurs" %}</h2>
+                <p class="card-subtitle">{% trans "Manage your suppliers" %}</p>
+            </div>
+            <div class="card-actions">
+                <button class="card-btn" onclick="openAddFournisseurModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" style="margin-right:6px;">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    {% trans "Add Fournisseur" %}
+                </button>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>{% trans "Name" %}</th>
+                        <th>{% trans "Phone" %}</th>
+                        <th>{% trans "Email" %}</th>
+                        <th>{% trans "Created by" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in fournisseurs %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <div class="table-user">
+                                <div class="table-avatar"
+                                     style="background:linear-gradient(135deg,var(--emerald-light),var(--emerald));">
+                                    {{ f.name|slice:":2"|upper }}
+                                </div>
+                                <div class="table-user-info">
+                                    <span class="table-user-name">{{ f.name }}</span>
+                                    {% if f.address %}
+                                    <span style="opacity:.6;font-size:.8rem;">{{ f.address|truncatechars:30 }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ f.phone|default:"—" }}</td>
+                        <td>{{ f.email|default:"—" }}</td>
+                        <td>{{ f.iduser }}</td>
+                        <td>
+                            <div style="display:flex;gap:8px;">
+                                <button class="card-btn" style="padding:6px 12px;"
+                                    data-id="{{ f.pk }}"
+                                    data-name="{{ f.name }}"
+                                    data-phone="{{ f.phone }}"
+                                    data-email="{{ f.email }}"
+                                    data-address="{{ f.address }}"
+                                    onclick="openFournisseurEditModal(this)">
+                                    {% trans "Edit" %}
+                                </button>
+                                <button class="card-btn"
+                                        style="padding:6px 12px;background:rgba(255,80,80,0.15);color:#ff6b6b;"
+                                    data-id="{{ f.pk }}"
+                                    data-name="{{ f.name }}"
+                                    onclick="openFournisseurDeleteModal(this)">
+                                    {% trans "Delete" %}
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align:center;opacity:0.6;">
+                            {% trans "No fournisseurs found." %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- ADD MODAL -->
+<div id="addFournisseurModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:1000;align-items:center;justify-content:center;">
+    <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);" onclick="closeAddFournisseurModal()"></div>
+    <div class="login-card" style="position:relative;z-index:1001;width:100%;max-width:480px;margin:20px;">
+        <div class="login-header">
+            <div class="login-logo">F</div>
+            <h1 class="login-title">{% trans "Add Fournisseur" %}</h1>
+            <p class="login-subtitle">{% trans "Create a new supplier" %}</p>
+        </div>
+        <form method="POST" action="{% url 'fournisseur_add' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">{% trans "Name" %} *</label>
+                <input type="text" name="name" class="form-input"
+                       placeholder="{% trans 'e.g. Supplier Co.' %}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">{% trans "Phone" %}</label>
+                <input type="text" name="phone" class="form-input"
+                       placeholder="{% trans 'e.g. +212 6 00 00 00 00' %}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">{% trans "Email" %}</label>
+                <input type="email" name="email" class="form-input"
+                       placeholder="{% trans 'e.g. contact@supplier.com' %}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">{% trans "Address" %}</label>
+                <textarea name="address" class="form-input" rows="2"
+                          placeholder="{% trans 'e.g. 123 Main St, Casablanca' %}"></textarea>
+            </div>
+            <div style="display:flex;gap:12px;">
+                <button type="button" onclick="closeAddFournisseurModal()" class="btn"
+                        style="flex:1;background:rgba(255,255,255,0.1);">{% trans "Cancel" %}</button>
+                <button type="submit" class="btn btn-primary" style="flex:1;">
+                    {% trans "Add Fournisseur" %}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                        <polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div id="editFournisseurModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:1000;align-items:center;justify-content:center;">
+    <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);" onclick="closeFournisseurEditModal()"></div>
+    <div class="login-card" style="position:relative;z-index:1001;width:100%;max-width:480px;margin:20px;">
+        <div class="login-header">
+            <div class="login-logo">F</div>
+            <h1 class="login-title">{% trans "Edit Fournisseur" %}</h1>
+            <p class="login-subtitle">{% trans "Update supplier details" %}</p>
+        </div>
+        <form method="POST" id="editFournisseurForm" action="">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">{% trans "Name" %} *</label>
+                <input type="text" id="edit_fournisseur_name" name="name" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">{% trans "Phone" %}</label>
+                <input type="text" id="edit_fournisseur_phone" name="phone" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">{% trans "Email" %}</label>
+                <input type="email" id="edit_fournisseur_email" name="email" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">{% trans "Address" %}</label>
+                <textarea id="edit_fournisseur_address" name="address" class="form-input" rows="2"></textarea>
+            </div>
+            <div style="display:flex;gap:12px;">
+                <button type="button" onclick="closeFournisseurEditModal()" class="btn"
+                        style="flex:1;background:rgba(255,255,255,0.1);">{% trans "Cancel" %}</button>
+                <button type="submit" class="btn btn-primary" style="flex:1;">
+                    {% trans "Save Changes" %}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div id="deleteFournisseurModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:1000;align-items:center;justify-content:center;">
+    <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);" onclick="closeFournisseurDeleteModal()"></div>
+    <div class="login-card" style="position:relative;z-index:1001;width:100%;max-width:400px;margin:20px;">
+        <div class="login-header">
+            <div class="login-logo" style="background:rgba(255,80,80,0.2);color:#ff6b6b;">!</div>
+            <h1 class="login-title">{% trans "Delete Fournisseur" %}</h1>
+            <p class="login-subtitle" id="fournisseurDeleteConfirmText">{% trans "Are you sure?" %}</p>
+        </div>
+        <form method="POST" id="deleteFournisseurForm" action="">
+            {% csrf_token %}
+            <div style="display:flex;gap:12px;">
+                <button type="button" onclick="closeFournisseurDeleteModal()" class="btn"
+                        style="flex:1;background:rgba(255,255,255,0.1);">{% trans "Cancel" %}</button>
+                <button type="submit" class="btn"
+                        style="flex:1;background:rgba(255,80,80,0.2);color:#ff6b6b;border:1px solid rgba(255,80,80,0.3);">
+                    {% trans "Yes, Delete" %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openAddFournisseurModal()  { document.getElementById('addFournisseurModal').style.display = 'flex'; }
+    function closeAddFournisseurModal() { document.getElementById('addFournisseurModal').style.display = 'none'; }
+
+    function openFournisseurEditModal(btn) {
+        document.getElementById('editFournisseurForm').action = `/fournisseur/edit/${btn.dataset.id}/`;
+        document.getElementById('edit_fournisseur_name').value    = btn.dataset.name    || '';
+        document.getElementById('edit_fournisseur_phone').value   = btn.dataset.phone   || '';
+        document.getElementById('edit_fournisseur_email').value   = btn.dataset.email   || '';
+        document.getElementById('edit_fournisseur_address').value = btn.dataset.address || '';
+        document.getElementById('editFournisseurModal').style.display = 'flex';
+    }
+    function closeFournisseurEditModal() { document.getElementById('editFournisseurModal').style.display = 'none'; }
+
+    function openFournisseurDeleteModal(btn) {
+        document.getElementById('deleteFournisseurForm').action = `/fournisseur/delete/${btn.dataset.id}/`;
+        document.getElementById('fournisseurDeleteConfirmText').textContent =
+            `Are you sure you want to delete "${btn.dataset.name}"? This cannot be undone.`;
+        document.getElementById('deleteFournisseurModal').style.display = 'flex';
+    }
+    function closeFournisseurDeleteModal() { document.getElementById('deleteFournisseurModal').style.display = 'none'; }
+</script>
+
+{% endblock %}

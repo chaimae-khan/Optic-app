@@ -1,0 +1,376 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-26 13:37+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: .\myapp\templates\index.html:83
+msgid "Select language"
+msgstr "Choisir la langue"
+
+#: .\myapp\templates\users.html:8 .\myapp\templates\users.html:53
+#: .\myapp\templates\users.html:58 .\myapp\templates\users.html:108
+#: .\myapp\templates\users.html:112
+msgid "Users"
+msgstr "Utilisateurs"
+
+#: .\myapp\templates\users.html:32
+msgid "Main Menu"
+msgstr "Menu principal"
+
+#: .\myapp\templates\users.html:35 .\myapp\templates\users.html:40
+#: .\myapp\templates\users.html:110
+msgid "Dashboard"
+msgstr "Tableau de bord"
+
+#: .\myapp\templates\users.html:44 .\myapp\templates\users.html:48
+msgid "Analytics"
+msgstr "Analytiques"
+
+#: .\myapp\templates\users.html:49
+msgid "New"
+msgstr "Nouveau"
+
+#: .\myapp\templates\users.html:62 .\myapp\templates\users.html:67
+msgid "Settings"
+msgstr "Paramètres"
+
+#: .\myapp\templates\users.html:74
+msgid "Account"
+msgstr "Compte"
+
+#: .\myapp\templates\users.html:77 .\myapp\templates\users.html:82
+msgid "Logout"
+msgstr "Déconnexion"
+
+#: .\myapp\templates\users.html:94
+msgid "Administrator"
+msgstr "Administrateur"
+
+#: .\myapp\templates\users.html:120
+msgid "Search users..."
+msgstr "Rechercher des utilisateurs..."
+
+#: .\myapp\templates\users.html:128
+msgid "Toggle Light/Dark Mode"
+msgstr "Basculer mode clair/sombre"
+
+#: .\myapp\templates\users.html:147
+msgid "Total Users"
+msgstr "Total des utilisateurs"
+
+#: .\myapp\templates\users.html:166
+msgid "Active Now"
+msgstr "Actif maintenant"
+
+#: .\myapp\templates\users.html:184
+msgid "New Today"
+msgstr "Nouveau aujourd'hui"
+
+#: .\myapp\templates\users.html:203
+msgid "Premium Users"
+msgstr "Utilisateurs premium"
+
+#: .\myapp\templates\users.html:224
+msgid "All Users"
+msgstr "Tous les utilisateurs"
+
+#: .\myapp\templates\users.html:225
+msgid "Manage your user base"
+msgstr "Gérer votre base d'utilisateurs"
+
+#: .\myapp\templates\users.html:232 .\myapp\templates\users.html:367
+msgid "Add User"
+msgstr "Ajouter un utilisateur"
+
+#: .\myapp\templates\users.html:234
+msgid "Export"
+msgstr "Exporter"
+
+#: .\myapp\templates\users.html:241
+msgid "User"
+msgstr "Utilisateur"
+
+#: .\myapp\templates\users.html:242 .\myapp\templates\users.html:348
+msgid "Role"
+msgstr "Rôle"
+
+#: .\myapp\templates\users.html:243
+msgid "Status"
+msgstr "Statut"
+
+#: .\myapp\templates\users.html:244
+msgid "Joined"
+msgstr "Inscrit"
+
+#: .\myapp\templates\users.html:245
+msgid "Last Active"
+msgstr "Dernière activité"
+
+#: .\myapp\templates\users.html:246
+msgid "Actions"
+msgstr "Actions"
+
+#: .\myapp\templates\users.html:268
+msgid "No Role"
+msgstr "Aucun rôle"
+
+#: .\myapp\templates\users.html:272
+msgid "Active"
+msgstr "Actif"
+
+#: .\myapp\templates\users.html:274
+msgid "Just now"
+msgstr "À l'instant"
+
+#: .\myapp\templates\users.html:282
+msgid "Edit"
+msgstr "Modifier"
+
+#: .\myapp\templates\users.html:288
+msgid "No users found."
+msgstr "Aucun utilisateur trouvé."
+
+#: .\myapp\templates\users.html:308
+msgid "Copyright"
+msgstr "Droits d'auteur"
+
+#: .\myapp\templates\users.html:308
+msgid "Your Company"
+msgstr "Votre entreprise"
+
+#: .\myapp\templates\users.html:308
+msgid "Designed by"
+msgstr "Conçu par"
+
+#: .\myapp\templates\users.html:320
+msgid "Add New User"
+msgstr "Ajouter un nouvel utilisateur"
+
+#: .\myapp\templates\users.html:321
+msgid "Create a new shop account"
+msgstr "Créer un nouveau compte boutique"
+
+#: .\myapp\templates\users.html:327 .\myapp\templates\users.html:392
+msgid "Full Name"
+msgstr "Nom complet"
+
+#: .\myapp\templates\users.html:328
+msgid "Enter shop name"
+msgstr "Entrer le nom de la boutique"
+
+#: .\myapp\templates\users.html:331 .\myapp\templates\users.html:396
+msgid "Email Address"
+msgstr "Adresse e-mail"
+
+#: .\myapp\templates\users.html:332
+msgid "Enter email"
+msgstr "Entrer l'e-mail"
+
+#: .\myapp\templates\users.html:335
+msgid "Password"
+msgstr "Mot de passe"
+
+#: .\myapp\templates\users.html:336
+msgid "Create password"
+msgstr "Créer un mot de passe"
+
+#: .\myapp\templates\users.html:339 .\myapp\templates\users.html:407
+msgid "Language"
+msgstr "Langue"
+
+#: .\myapp\templates\users.html:341 .\myapp\templates\users.html:409
+#: .\myproject\settings.py:32
+msgid "English"
+msgstr "Anglais"
+
+#: .\myapp\templates\users.html:342 .\myapp\templates\users.html:410
+#: .\myproject\settings.py:34
+msgid "French"
+msgstr "Français"
+
+#: .\myapp\templates\users.html:343 .\myapp\templates\users.html:411
+#: .\myproject\settings.py:33
+msgid "Arabic"
+msgstr "Arabe"
+
+#: .\myapp\templates\users.html:352
+msgid "— Select a Role —"
+msgstr "— Sélectionner un rôle —"
+
+#: .\myapp\templates\users.html:358
+msgid "Determines which permissions this user inherits."
+msgstr "Détermine les permissions héritées par cet utilisateur."
+
+#: .\myapp\templates\users.html:364 .\myapp\templates\users.html:416
+msgid "Cancel"
+msgstr "Annuler"
+
+#: .\myapp\templates\users.html:385
+msgid "Edit User"
+msgstr "Modifier l'utilisateur"
+
+#: .\myapp\templates\users.html:386
+msgid "Update account details"
+msgstr "Mettre à jour les détails du compte"
+
+#: .\myapp\templates\users.html:401
+msgid "New Password"
+msgstr "Nouveau mot de passe"
+
+#: .\myapp\templates\users.html:402
+msgid "leave blank to keep current"
+msgstr "laisser vide pour conserver l'actuel"
+
+#: .\myapp\templates\users.html:404
+msgid "Enter new password (optional)"
+msgstr "Entrer un nouveau mot de passe (facultatif)"
+
+#: .\myapp\templates\users.html:419
+msgid "Save Changes"
+msgstr "Enregistrer les modifications"
+
+# ── PAGE TITLE ──────────────────────────────────────────
+#: .\myapp\templates\permissions.html:8
+msgid "Dashboard Overview"
+msgstr "Vue d'ensemble du tableau de bord"
+
+# ── STATS CARDS ─────────────────────────────────────────
+#: .\myapp\templates\permissions.html
+msgid "Total Roles"
+msgstr "Total des rôles"
+
+
+
+#: .\myapp\templates\permissions.html
+msgid "Total Permissions"
+msgstr "Total des permissions"
+
+#: .\myapp\templates\permissions.html
+msgid "Available"
+msgstr "Disponible"
+
+#: .\myapp\templates\permissions.html
+msgid "Total Assigned"
+msgstr "Total attribué"
+
+#: .\myapp\templates\permissions.html
+msgid "Across all roles"
+msgstr "Pour tous les rôles"
+
+# ── ROLES TABLE ──────────────────────────────────────────
+#: .\myapp\templates\permissions.html
+msgid "All Roles"
+msgstr "Tous les rôles"
+
+#: .\myapp\templates\permissions.html
+msgid "Manage roles and their assigned permissions"
+msgstr "Gérer les rôles et leurs permissions attribuées"
+
+#: .\myapp\templates\permissions.html
+msgid "Add Role"
+msgstr "Ajouter un rôle"
+
+
+#: .\myapp\templates\permissions.html
+msgid "Assigned Permissions"
+msgstr "Permissions attribuées"
+
+#: .\myapp\templates\permissions.html
+msgid "Count"
+msgstr "Nombre"
+
+
+
+#: .\myapp\templates\permissions.html
+msgid "Django Group"
+msgstr "Groupe Django"
+
+#: .\myapp\templates\permissions.html
+msgid "No permissions assigned"
+msgstr "Aucune permission attribuée"
+
+
+
+#: .\myapp\templates\permissions.html
+msgid "Delete"
+msgstr "Supprimer"
+
+#: .\myapp\templates\permissions.html
+msgid "No roles yet. Click"
+msgstr "Aucun rôle pour l'instant. Cliquez sur"
+
+#: .\myapp\templates\permissions.html
+msgid "Add Role to get started."
+msgstr "Ajouter un rôle pour commencer."
+
+# ── ADD ROLE MODAL ───────────────────────────────────────
+#: .\myapp\templates\permissions.html
+msgid "Create New Role"
+msgstr "Créer un nouveau rôle"
+
+#: .\myapp\templates\permissions.html
+msgid "Enter a name for the new role. You can assign permissions after creating it."
+msgstr "Entrez un nom pour le nouveau rôle. Vous pourrez attribuer des permissions après sa création."
+
+#: .\myapp\templates\permissions.html
+msgid "e.g. Directeur, Formateur, Comptable…"
+msgstr "ex. Directeur, Formateur, Comptable…"
+
+
+#: .\myapp\templates\permissions.html
+msgid "Create Role"
+msgstr "Créer le rôle"
+
+# ── DELETE MODAL ─────────────────────────────────────────
+#: .\myapp\templates\permissions.html
+msgid "Delete Role"
+msgstr "Supprimer le rôle"
+
+#: .\myapp\templates\permissions.html
+msgid "Are you sure? This cannot be undone."
+msgstr "Êtes-vous sûr ? Cette action est irréversible."
+
+#: .\myapp\templates\permissions.html
+msgid "Yes, Delete"
+msgstr "Oui, supprimer"
+
+# ── EDIT PERMISSIONS VIEW ────────────────────────────────
+#: .\myapp\templates\permissions.html
+msgid "Back to all roles"
+msgstr "Retour à tous les rôles"
+
+#: .\myapp\templates\permissions.html
+msgid "Permissions"
+msgstr "Permissions"
+
+#: .\myapp\templates\permissions.html
+msgid "Check the permissions this role should have access to."
+msgstr "Cochez les permissions auxquelles ce rôle doit avoir accès."
+
+#: .\myapp\templates\permissions.html
+msgid "Select All"
+msgstr "Tout sélectionner"
+
+#: .\myapp\templates\permissions.html
+msgid "Clear All"
+msgstr "Tout désélectionner"
+
+#: .\myapp\templates\permissions.html
+msgid "Save Permissions"
+msgstr "Enregistrer les permissions"
+
