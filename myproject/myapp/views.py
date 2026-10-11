@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from .models import User, Category, SubCategory,Unite, Brand ,Local, Rayon ,Fournisseur, Product,TempAchat, Achat, LigneAchat
+from .models import User, Category, SubCategory,Unite, Brand ,Local, Rayon ,Fournisseur, Product,TempAchat, Achat, LigneAchat ,Vente,TempVente,LigneVente
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib.auth.models import Group, Permission
@@ -720,8 +720,40 @@ def unite_delete(request, pk):
 # MISC PAGES
 # ============================================
 
+LOW_STOCK_THRESHOLD = 5
+
+
+@login_required
 def index(request):
-    return render(request, 'index.html')
+    low_stock_products = list(
+        Product.objects.filter(is_active=True)
+        .select_related('category')
+        .annotate(
+            computed_stock=Coalesce(
+                Sum(
+                    Case(
+                        When(stocks__movement_type='in', then=F('stocks__quantity')),
+                        When(stocks__movement_type='out', then=F('stocks__quantity') * -1),
+                        default=0,
+                        output_field=IntegerField(),
+                    )
+                ),
+                0,
+            )
+        )
+        .filter(computed_stock__lte=LOW_STOCK_THRESHOLD)
+        .order_by('computed_stock', 'name')
+    )
+
+    return render(request, 'index.html', {
+        'total_users':           User.objects.count(),
+        'total_achats':          Achat.objects.exclude(status='livraison').count(),
+        'unvalidated_ventes':    Vente.objects.filter(status='creation').count(),
+        'low_stock_products':    low_stock_products,
+        'out_of_stock_count':    sum(1 for p in low_stock_products if p.computed_stock == 0),
+        'low_stock_count':       sum(1 for p in low_stock_products if p.computed_stock > 0),
+        'low_stock_threshold':   LOW_STOCK_THRESHOLD,
+    })
 
 def about(request):
     return render(request, 'about-templatemo.html')
@@ -1337,4 +1369,361 @@ def stock_history_ajax(request, product_id):
         'product': product.name,
         'current_stock': product.stock_quantity,
         'movements': data,
+    })
+# ============================================================
+# myapp/views.py
+# 1) Change the models import line to also include the new models:
+#    from .models import (User, Category, SubCategory, Unite, Brand, Local, Rayon,
+#        Fournisseur, Product, TempAchat, Achat, LigneAchat,
+#        TempVente, Vente, LigneVente)
+# 2) APPEND everything below at the end of the file.
+# ============================================================
+
+# ============================================
+# VENTE — helper
+# ============================================
+
+def can_validate_vente(user):
+    return user.is_active and (
+        user.is_superuser or
+        user.has_perm('myapp.can_validate_vente')
+    )
+
+
+# ============================================
+# VENTE — Page principale (search + cart UI)
+# ============================================
+
+@login_required
+def vente_create(request):
+    ventes = Vente.objects.select_related('user').order_by('-created_at')
+    return render(request, 'vente.html', {
+        'ventes': ventes,
+        'can_validate': can_validate_vente(request.user),
+    })
+
+
+# ============================================
+# VENTE — Product search (AJAX)
+# ============================================
+
+@login_required
+def vente_product_search(request):
+    q = request.GET.get('q', '').strip()
+    products = Product.objects.filter(is_active=True)
+    if q:
+        products = products.filter(name__icontains=q)
+
+    data = list(products.values('id', 'name', 'price_vente')[:20])
+    return JsonResponse({'products': data})
+
+
+# ============================================
+# VENTE — Add product to cart (TempVente)
+# ============================================
+
+@login_required
+def vente_temp_add(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 400, 'message': 'Méthode invalide'})
+
+    produit_id = request.POST.get('produit_id')
+
+    try:
+        qte = int(request.POST.get('qte', 1))
+    except (TypeError, ValueError):
+        qte = 1
+    if qte < 1:
+        qte = 1
+
+    produit = get_object_or_404(Product, pk=produit_id)
+
+    temp, created = TempVente.objects.get_or_create(
+        user=request.user,
+        produit=produit,
+        defaults={'qte': qte},
+    )
+    if not created:
+        temp.qte = F('qte') + qte
+        temp.save()
+
+    return JsonResponse({'status': 200, 'message': 'Produit ajouté au panier'})
+
+
+# ============================================
+# VENTE — Get cart items
+# ============================================
+
+@login_required
+def vente_temp_list(request):
+    items = TempVente.objects.filter(user=request.user).select_related('produit')
+
+    data = [{
+        'id': item.id,
+        'produit': item.produit.name,
+        'qte': item.qte,
+        'price_vente': str(item.produit.price_vente),
+        'total': str(item.qte * item.produit.price_vente),
+    } for item in items]
+
+    total_general = sum(item.qte * item.produit.price_vente for item in items)
+
+    return JsonResponse({'items': data, 'total': str(total_general)})
+
+
+# ============================================
+# VENTE — Update quantity in cart
+# ============================================
+
+@login_required
+def vente_temp_update_qte(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 400, 'message': 'Méthode invalide'})
+
+    temp_id = request.POST.get('id')
+
+    try:
+        qte = int(request.POST.get('qte'))
+    except (TypeError, ValueError):
+        return JsonResponse({'status': 400, 'message': 'Quantité invalide'})
+
+    if qte < 1:
+        return JsonResponse({'status': 400, 'message': 'La quantité doit être au moins 1'})
+
+    temp = get_object_or_404(TempVente, pk=temp_id, user=request.user)
+    temp.qte = qte
+    temp.save()
+
+    return JsonResponse({'status': 200, 'message': 'Quantité mise à jour'})
+
+
+# ============================================
+# VENTE — Remove one item from cart
+# ============================================
+
+@login_required
+def vente_temp_delete(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 400, 'message': 'Méthode invalide'})
+
+    temp_id = request.POST.get('id')
+    TempVente.objects.filter(pk=temp_id, user=request.user).delete()
+
+    return JsonResponse({'status': 200, 'message': 'Article supprimé'})
+
+
+# ============================================
+# VENTE — Save: cart → Vente + LigneVente (stock NOT touched)
+# ============================================
+
+@login_required
+def vente_save_cart(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 400, 'message': 'Méthode invalide'})
+
+    temp_items = TempVente.objects.filter(user=request.user).select_related('produit')
+
+    if not temp_items.exists():
+        return JsonResponse({'status': 400, 'message': 'Panier vide'})
+
+    total = sum(item.qte * item.produit.price_vente for item in temp_items)
+
+    with transaction.atomic():
+        vente = Vente.objects.create(total=total, user=request.user)
+        for item in temp_items:
+            LigneVente.objects.create(vente=vente, produit=item.produit, user=request.user, qte=item.qte)
+        temp_items.delete()
+
+    return JsonResponse({'status': 200, 'message': 'Vente enregistrée avec succès', 'vente_id': vente.id})
+
+
+# ============================================
+# VENTE — Admin validation: decreases stock (once, all-or-nothing)
+# ============================================
+
+@login_required
+def vente_validate(request, pk):
+    if request.method != 'POST':
+        return JsonResponse({'status': 400, 'message': 'Méthode invalide'})
+
+    if not can_validate_vente(request.user):
+        return JsonResponse({'status': 403, 'message': "Seul un administrateur peut valider une vente."})
+
+    with transaction.atomic():
+        # Lock the vente row so two simultaneous validations can't both pass the status check.
+        vente = Vente.objects.select_for_update().filter(pk=pk).first()
+        if vente is None:
+            return JsonResponse({'status': 404, 'message': 'Vente introuvable'})
+
+        if vente.status == 'validation':
+            return JsonResponse({'status': 400, 'message': "Cette vente est déjà validée."})
+
+        lignes = list(vente.lignes.select_related('produit'))
+        if not lignes:
+            return JsonResponse({'status': 400, 'message': 'Vente sans lignes'})
+
+        # Total quantity needed per product (a product could appear on several lines).
+        needed = {}
+        for ligne in lignes:
+            needed[ligne.produit_id] = needed.get(ligne.produit_id, 0) + ligne.qte
+
+        # Lock products (ordered, to avoid deadlocks) and check stock BEFORE any write.
+        products = Product.objects.select_for_update().filter(pk__in=needed.keys()).order_by('pk')
+        shortages = []
+        for p in products:
+            available = p.stock_quantity
+            if available < needed[p.pk]:
+                shortages.append(f"{p.name} (disponible: {available}, demandé: {needed[p.pk]})")
+
+        if shortages:
+            return JsonResponse({
+                'status': 400,
+                'message': "Stock insuffisant : " + " ; ".join(shortages),
+            })
+
+        for ligne in lignes:
+            Stock.objects.create(
+                product=ligne.produit,
+                quantity=ligne.qte,
+                movement_type='out',
+                ligne_vente=ligne,
+                user=request.user,
+            )
+        vente.status = 'validation'
+        vente.save(update_fields=['status', 'updated_at'])
+
+    return JsonResponse({
+        'status': 200,
+        'message': 'Vente validée',
+        'new_status': vente.status,
+        'new_status_display': vente.get_status_display(),
+    })
+
+
+# ============================================
+# VENTE — Delete (not allowed once validated)
+# ============================================
+
+@login_required
+def vente_delete(request, pk):
+    if request.method == 'POST':
+        vente = get_object_or_404(Vente, pk=pk)
+        if vente.status == 'validation':
+            messages.error(request, "Cette vente est déjà validée et ne peut plus être supprimée.")
+            return redirect('vente_create')
+        vente.delete()
+        messages.success(request, 'Vente supprimée avec succès.')
+    return redirect('vente_create')
+# ============================================
+# VENTE — Details page (read-only)
+# ============================================
+
+@login_required
+def vente_detail(request, pk):
+    vente = get_object_or_404(Vente.objects.select_related('user'), pk=pk)
+
+    lignes = list(
+        vente.lignes.select_related('produit', 'produit__unit').order_by('pk')
+    )
+
+    # Current stock per product (single query, no N+1) — only useful while pending.
+    product_ids = {l.produit_id for l in lignes}
+    stock_map = {
+        row['product_id']: row['total']
+        for row in (
+            Stock.objects.filter(product_id__in=product_ids)
+            .values('product_id')
+            .annotate(
+                total=Coalesce(
+                    Sum(
+                        Case(
+                            When(movement_type='in', then=F('quantity')),
+                            When(movement_type='out', then=F('quantity') * -1),
+                            default=0,
+                            output_field=IntegerField(),
+                        )
+                    ),
+                    0,
+                )
+            )
+        )
+    }
+
+    # Total quantity needed per product (a product may appear on several lines).
+    needed = {}
+    for l in lignes:
+        needed[l.produit_id] = needed.get(l.produit_id, 0) + l.qte
+
+    computed_total = 0
+    total_qte = 0
+    for l in lignes:
+        l.unit_price = l.produit.price_vente
+        l.subtotal   = l.unit_price * l.qte
+        l.stock_now  = stock_map.get(l.produit_id, 0)
+        l.stock_ok   = l.stock_now >= needed[l.produit_id]
+        computed_total += l.subtotal
+        total_qte      += l.qte
+
+    # Stock movements generated by the validation (empty while pending).
+    movements = list(
+        Stock.objects.filter(ligne_vente__vente=vente)
+        .select_related('product', 'user')
+        .order_by('date')
+    )
+    validated_at = movements[0].date if movements else None
+    validated_by = movements[0].user if movements else None
+
+    return render(request, 'vente_detail.html', {
+        'vente':          vente,
+        'lignes':         lignes,
+        'total_qte':      total_qte,
+        'computed_total': computed_total,
+        'total_mismatch': computed_total != vente.total,
+        'movements':      movements,
+        'validated_at':   validated_at,
+        'validated_by':   validated_by,
+        'is_validated':   vente.status == 'validation',
+        'can_validate':   can_validate_vente(request.user),
+    })
+# ============================================
+# ACHAT — Details page (read-only)
+# ============================================
+
+@login_required
+def achat_detail(request, pk):
+    achat = get_object_or_404(
+        Achat.objects.select_related('fournisseur', 'user'), pk=pk
+    )
+
+    lignes = list(
+        achat.lignes.select_related('produit', 'produit__unit').order_by('pk')
+    )
+
+    computed_total = 0
+    total_qte = 0
+    for l in lignes:
+        l.unit_price = l.produit.price_achat
+        l.subtotal   = l.unit_price * l.qte
+        computed_total += l.subtotal
+        total_qte      += l.qte
+
+    # Stock "in" movements created when the achat moved to 'livraison'.
+    movements = list(
+        Stock.objects.filter(ligne_achat__achat=achat)
+        .select_related('product', 'user')
+        .order_by('date')
+    )
+    delivered_at = movements[0].date if movements else None
+    delivered_by = movements[0].user if movements else None
+
+    return render(request, 'achat_detail.html', {
+        'achat':          achat,
+        'lignes':         lignes,
+        'total_qte':      total_qte,
+        'computed_total': computed_total,
+        'total_mismatch': computed_total != achat.total,
+        'movements':      movements,
+        'delivered_at':   delivered_at,
+        'delivered_by':   delivered_by,
+        'can_advance':    achat.status != 'livraison',
     })

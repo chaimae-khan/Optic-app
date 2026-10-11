@@ -347,6 +347,12 @@ class Stock(models.Model):
         null=True, blank=True,
         related_name='stock_movements'
     )
+    ligne_vente = models.ForeignKey(          
+        'LigneVente',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='stock_movements'
+    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -360,3 +366,75 @@ class Stock(models.Model):
     def __str__(self):
         sign = '+' if self.movement_type == 'in' else '-'
         return f"{sign}{self.quantity} {self.product.name} ({self.date:%Y-%m-%d})"
+# ============================================================
+# myapp/models.py — APPEND these classes AFTER LigneAchat / TempAchat
+# and BEFORE `class Stock` (Stock needs LigneVente to exist).
+# ============================================================
+
+# ── Vente (sale header) ─────────────────────────────────────
+class Vente(SoftDeleteModel):
+    # creation  = sale submitted, stock NOT touched
+    # validation = admin validated, stock decreased (once)
+    STATUS_CHOICES = [
+        ('creation', 'Création'),
+        ('validation', 'Validation'),
+    ]
+
+    total  = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='creation')
+    user   = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='ventes'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    history = HistoricalRecords()
+
+    class Meta:
+        ordering = ['-created_at']
+        permissions = [
+            ('can_validate_vente', 'Can validate a vente (decreases stock)'),
+        ]
+
+    def __str__(self):
+        return f"Vente #{self.pk} ({self.total} DH)"
+
+
+# ── LigneVente (line items) ─────────────────────────────────
+class LigneVente(SoftDeleteModel):
+    vente   = models.ForeignKey(Vente, on_delete=models.CASCADE, related_name='lignes')
+    produit = models.ForeignKey('Product', on_delete=models.CASCADE, related_name='lignes_vente')
+    user    = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='lignes_vente'
+    )
+    qte = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return f"{self.qte} x {self.produit.name} (Vente #{self.vente_id})"
+
+
+# ── TempVente (cart, before the sale is saved) ──────────────
+class TempVente(models.Model):
+    user    = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='temp_ventes'
+    )
+    produit = models.ForeignKey('Product', on_delete=models.CASCADE, related_name='temp_ventes')
+    qte = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"[cart vente] {self.qte} x {self.produit.name} ({self.user})"
+
+
+# ============================================================
+# In class Stock, ADD this field right after `ligne_achat`:
+# ============================================================
+#     ligne_vente = models.ForeignKey(
+#         LigneVente,
+#         on_delete=models.SET_NULL,
+#         null=True, blank=True,
+#         related_name='stock_movements'
+#     )

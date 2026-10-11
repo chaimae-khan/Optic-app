@@ -82,5 +82,17 @@ urlpatterns = [
     path('stock/', views.stock_list, name='stock_list'),
     path('stock/history/', views.stock_history, name='stock_history'),
     path('stock/history/<int:product_id>/', views.stock_history_ajax, name='stock_history_ajax'),
-    
+
+    # vente  Manager ──────────────────────────────────────
+    path('vente/', views.vente_create, name='vente_create'),
+    path('vente/product-search/', views.vente_product_search, name='vente_product_search'),
+    path('vente/temp/add/', views.vente_temp_add, name='vente_temp_add'),
+    path('vente/temp/list/', views.vente_temp_list, name='vente_temp_list'),
+    path('vente/temp/update/', views.vente_temp_update_qte, name='vente_temp_update_qte'),
+    path('vente/temp/delete/', views.vente_temp_delete, name='vente_temp_delete'),
+    path('vente/save-cart/', views.vente_save_cart, name='vente_save_cart'),
+    path('vente/<int:pk>/validate/', views.vente_validate, name='vente_validate'),
+    path('vente/<int:pk>/delete/', views.vente_delete, name='vente_delete'),
+    path('ventes/<int:pk>/details/', views.vente_detail, name='vente_detail'),
+    path('achats/<int:pk>/details/', views.achat_detail, name='achat_detail'),
     ]

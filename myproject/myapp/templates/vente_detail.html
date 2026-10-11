@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Vente #{{ vente.pk }}{% endblock %}
+
+{% block content %}
+<style>
+.alert-msg {
+    padding: 10px 16px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+}
+.alert-error   { background: rgba(255, 80, 80, 0.15); color: #ff6b6b; border: 1px solid rgba(255, 80, 80, 0.3); }
+.alert-success { background: rgba(0, 200, 120, 0.15); color: var(--emerald-light); border: 1px solid rgba(0, 200, 120, 0.3); }
+.alert-warning { background: rgba(255, 180, 0, 0.15); color: #ffb400; border: 1px solid rgba(255, 180, 0, 0.3); }
+
+.status-creation   { background: rgba(255, 180, 0, 0.15); color: #ffb400; border: 1px solid rgba(255,180,0,0.3); }
+.status-validation { background: rgba(0, 200, 120, 0.15); color: var(--emerald-light); border: 1px solid rgba(0,200,120,0.3); }
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    padding: 4px 0 8px 0;
+}
+.detail-item {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 14px 16px;
+}
+.detail-label {
+    font-size: 11px;
+    font-weight: 700;
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+}
+.detail-value {
+    font-size: 15px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+.detail-sub { font-size: 12px; opacity: 0.55; margin-top: 4px; }
+
+.total-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--emerald-light);
+    background: rgba(0,200,120,0.08);
+    border: 1px solid rgba(0,200,120,0.2);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 14px;
+}
+.total-box span:first-child {
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0.75;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.stock-low { color: #ff6b6b; font-weight: 600; }
+.stock-ok  { color: var(--emerald-light); }
+</style>
+
+<!-- Stats -->
+<section class="stats-grid">
+    <div class="glass-card glass-card-3d stat-card">
+        <div class="stat-card-inner">
+            <div class="stat-info">
+                <h3>{% trans "Total" %}</h3>
+                <div class="stat-value">{{ vente.total }}</div>
+                <span class="stat-change positive">DH</span>
+            </div>
+            <div class="stat-icon cyan">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--emerald-light)" stroke-width="2">
+                    <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card glass-card-3d stat-card">
+        <div class="stat-card-inner">
+            <div class="stat-info">
+                <h3>{% trans "Articles" %}</h3>
+                <div class="stat-value">{{ total_qte }}</div>
+                <span class="stat-change positive">{{ lignes|length }} {% trans "ligne(s)" %}</span>
+            </div>
+            <div class="stat-icon cyan">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--emerald-light)" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card glass-card-3d stat-card">
+        <div class="stat-card-inner">
+            <div class="stat-info">
+                <h3>{% trans "Status" %}</h3>
+                <div class="stat-value" style="font-size: 22px;">{{ vente.get_status_display }}</div>
+                <span class="stat-change {% if is_validated %}positive{% endif %}">
+                    {% if is_validated %}{% trans "Stock décrémenté" %}{% else %}{% trans "Stock non modifié" %}{% endif %}
+                </span>
+            </div>
+            <div class="stat-icon cyan">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--emerald-light)" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Messages -->
+{% if messages %}
+<div style="margin-bottom: 1rem;">
+    {% for message in messages %}
+    <div class="alert-msg
+        {% if message.tags == 'warning' %}alert-warning
+        {% elif message.tags == 'error' %}alert-error
+        {% else %}alert-success{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if total_mismatch %}
+<div class="alert-msg alert-warning" style="margin-bottom: 1rem;">
+    {% blocktrans with computed=computed_total saved=vente.total %}Les prix actuels des produits donnent {{ computed }} DH, alors que le total enregistré lors de la vente est {{ saved }} DH. Un prix a probablement changé depuis.{% endblocktrans %}
+</div>
+{% endif %}
+
+<!-- General information -->
+<section class="content-grid" style="grid-template-columns: 1fr;">
+    <div class="glass-card table-card">
+        <div class="card-header">
+            <div>
+                <h2 class="card-title">{% trans "Vente" %} #{{ vente.pk }}</h2>
+                <p class="card-subtitle">{% trans "Informations générales" %}</p>
+            </div>
+            <div class="card-actions" style="display:flex; gap:10px;">
+                <a href="{% url 'vente_create' %}" class="card-btn" style="text-decoration:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" style="margin-right: 6px;">
+                        <line x1="19" y1="12" x2="5" y2="12"/>
+                        <polyline points="12 19 5 12 12 5"/>
+                    </svg>
+                    {% trans "Retour aux ventes" %}
+                </a>
+                {% if not is_validated and can_validate %}
+                <button type="button" class="card-btn"
+                        style="background: rgba(0,200,120,0.15); color: var(--emerald-light);"
+                        data-validate-url="{% url 'vente_validate' vente.pk %}"
+                        onclick="validateVente(this)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" style="margin-right: 6px;">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    {% trans "Valider la vente" %}
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="detail-grid">
+            <div class="detail-item">
+                <div class="detail-label">{% trans "Status" %}</div>
+                <div class="detail-value">
+                    <span class="status-badge {% if vente.status == 'creation' %}status-creation{% else %}status-validation{% endif %}">
+                        {{ vente.get_status_display }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-label">{% trans "Créé par" %}</div>
+                <div class="detail-value">{{ vente.user.shop_name|default:vente.user.username }}</div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-label">{% trans "Créé le" %}</div>
+                <div class="detail-value">{{ vente.created_at|date:"d/m/Y H:i:s" }}</div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-label">{% trans "Validé le" %}</div>
+                <div class="detail-value">
+                    {% if validated_at %}
+                        {{ validated_at|date:"d/m/Y H:i:s" }}
+                        <div class="detail-sub">
+                            {% trans "par" %} {{ validated_by.shop_name|default:validated_by.username }}
+                        </div>
+                    {% elif is_validated %}
+                        —
+                    {% else %}
+                        <span style="opacity:0.6;">{% trans "En attente de validation" %}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="detail-item">
+                <div class="detail-label">{% trans "Dernière modification" %}</div>
+                <div class="detail-value">{{ vente.updated_at|date:"d/m/Y H:i:s" }}</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Products -->
+<section class="content-grid" style="grid-template-columns: 1fr; margin-top: 1.5rem;">
+    <div class="glass-card table-card">
+        <div class="card-header">
+            <div>
+                <h2 class="card-title">{% trans "Produits" %}</h2>
+                <p class="card-subtitle">{% trans "Lignes de la vente" %}</p>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>{% trans "Produit" %}</th>
+                        <th>{% trans "Unité" %}</th>
+                        <th class="num">{% trans "Prix unitaire" %}</th>
+                        <th class="num">{% trans "Qté" %}</th>
+                        <th class="num">{% trans "Sous-total" %}</th>
+                        {% if not is_validated %}<th class="num">{% trans "Stock actuel" %}</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ligne in lignes %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ ligne.produit.name }}</td>
+                        <td>{{ ligne.produit.unit.name|default:"—" }}</td>
+                        <td class="num">{{ ligne.unit_price }}</td>
+                        <td class="num">{{ ligne.qte }}</td>
+                        <td class="num">{{ ligne.subtotal }}</td>
+                        {% if not is_validated %}
+                        <td class="num {% if ligne.stock_ok %}stock-ok{% else %}stock-low{% endif %}">
+                            {{ ligne.stock_now }}
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align:center; opacity:0.6;">
+                            {% trans "Aucune ligne pour cette vente." %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="total-box">
+            <span>{% trans "Total" %}</span>
+            <span>{{ vente.total }} DH</span>
+        </div>
+    </div>
+</section>
+
+<!-- Stock movements (only once validated) -->
+{% if is_validated %}
+<section class="content-grid" style="grid-template-columns: 1fr; margin-top: 1.5rem;">
+    <div class="glass-card table-card">
+        <div class="card-header">
+            <div>
+                <h2 class="card-title">{% trans "Mouvements de stock" %}</h2>
+                <p class="card-subtitle">{% trans "Générés lors de la validation" %}</p>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>{% trans "Date" %}</th>
+                        <th>{% trans "Produit" %}</th>
+                        <th>{% trans "Type" %}</th>
+                        <th class="num">{% trans "Quantité" %}</th>
+                        <th>{% trans "Utilisateur" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in movements %}
+                    <tr>
+                        <td>{{ m.date|date:"d/m/Y H:i:s" }}</td>
+                        <td>{{ m.product.name }}</td>
+                        <td>{{ m.get_movement_type_display }}</td>
+                        <td class="num">-{{ m.quantity }}</td>
+                        <td>{{ m.user.shop_name|default:m.user.username }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align:center; opacity:0.6;">
+                            {% trans "Aucun mouvement de stock enregistré." %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+/* Admin validation — same endpoint as the list page, decreases stock */
+async function validateVente(button) {
+    const url = button.dataset.validateUrl;
+    button.disabled = true;
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+        });
+        const data = await res.json();
+        if (data.status === 200) {
+            location.reload();
+        } else {
+            alert(data.message || 'Erreur');
+            button.disabled = false;
+        }
+    } catch (e) {
+        alert("{% trans 'Erreur réseau' %}");
+        button.disabled = false;
+    }
+}
+</script>
+
+{% endblock %}
